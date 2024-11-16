@@ -2,7 +2,6 @@
 #define FAT12LIB_H
 
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
 
 /**
@@ -16,9 +15,14 @@
 #define RESERVED_SIZE(boot) (boot.reserved_sectors * boot.bytes_per_sector)
 
 /**
- * @brief Calculate the size of the FAT area
+ * @brief Calculate the start of the FAT area
  */
-#define FAT_SIZE(boot) (boot.sectors_per_fat * boot.fat_count * boot.bytes_per_sector)
+#define FAT_START(boot) ((boot)->reserved_sectors * (boot)->bytes_per_sector)
+
+/**
+ * @brief Calculate the size of the FAT entries
+ */
+#define FAT_SIZE(boot) ((boot)->sectors_per_fat * (boot)->bytes_per_sector)
 
 /**
  * @brief Calculate the size of the root directory
@@ -28,22 +32,20 @@
 /**
  * @brief Calculate the size of the system area
  */
-#define SYSTEM_AREA_SIZE(boot) (RESERVED_SIZE(boot) + FAT_SIZE(boot) + ROOT_DIR_SIZE(boot))
-
-/**
- * @brief Calculate the start of the FAT area
- */
-#define FAT_START(boot) (boot.reserved_sectors * boot.bytes_per_sector)
+// #define SYSTEM_AREA_SIZE(boot) (RESERVED_SIZE(boot) + FAT_SIZE(boot) + ROOT_DIR_SIZE(boot))
 
 /**
  * @brief Calculate the total number of clusters
  */
-#define TOTAL_CLUSTERS(boot) (boot.total_sectors_16 / (uint16_t)boot.sectors_per_cluster)
+#define TOTAL_CLUSTERS(boot) ((boot)->total_sectors_16 / (uint16_t)(boot)->sectors_per_cluster)
 
 /**
  * @brief Calculate the total number of clusters in the system area
  */
-#define SYSTEM_CLUSTERS(boot) (boot.reserved_sectors + ((uint16_t)boot.fat_count * boot.sectors_per_fat) + (boot.root_entries_count * 32) / boot.bytes_per_sector)
+#define SYSTEM_CLUSTERS(boot) (\
+    (boot)->reserved_sectors + \
+    ((uint16_t)(boot)->fat_count * (boot)->sectors_per_fat) + \
+    ((boot)->root_entries_count * 32) / (boot)->bytes_per_sector)
 
 /**
  * @brief Calculate the total number of clusters in the data area
@@ -72,20 +74,30 @@ typedef struct
 } __attribute__((packed)) BootSector; // GCC specific attribute to prevent padding
 
 /**
- * @brief FAT entry type
- * 
- * The FAT entry is a 12-bit value that represents the next cluster in the chain.
- * 
- * This type is a 16-bit representation where the lower 12 bits are used to
- * store the next cluster.
+ * @brief FAT entries structure
  */
-typedef uint16_t fat_t;
+typedef struct {
+    uint16_t *entries; // FAT entries
+    uint16_t size;    // Number of entries
+} FatEntries;
 
 /**
  * @brief Parse the boot sector of a FAT12 file system.
+ * 
+ * @param file File pointer to the FAT12 image
+ * @param boot_sector Pointer to the boot sector structure
+ * @return 0 on success, -1 on error
  */
 int parse_boot_sector(FILE *file, BootSector *boot_sector);
 
-// fat_t *parse_fat(FILE *file, uint16_t fat_start, fat_size)
+/**
+ * @brief Parse the FAT entries of a FAT12 file system.
+ * 
+ * @param file File pointer to the FAT12 image
+ * @param boot_sector Pointer to the boot sector structure
+ * @param fat_entries Pointer to the FAT entries structure
+ * @return 0 on success, -1 on error
+ */
+int parse_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entries);
 
 #endif
