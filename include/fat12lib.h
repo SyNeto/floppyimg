@@ -5,34 +5,19 @@
 #include <stdio.h>
 
 /**
- * @brief Calculate the total disk size
- */
-#define TOTAL_DISK_SIZE(boot) (boot.total_sectors_16 * boot.bytes_per_sector)
-
-/**
- * @brief Calculate the size of the reserved area
- */
-#define RESERVED_SIZE(boot) (boot.reserved_sectors * boot.bytes_per_sector)
-
-/**
- * @brief Calculate the start of the FAT area
+ * @brief Calculate the start of the FAT area in bytes
  */
 #define FAT_START(boot) ((boot)->reserved_sectors * (boot)->bytes_per_sector)
 
 /**
- * @brief Calculate the size of the FAT entries
+ * @brief Calculate the size of the FAT entries in bytes
  */
 #define FAT_SIZE(boot) ((boot)->sectors_per_fat * (boot)->bytes_per_sector)
 
 /**
- * @brief Calculate the size of the root directory
+ * @brief Calculate the size of the root directory in sectors
  */
-#define ROOT_DIR_SIZE(boot) ((boot.root_entries_count * 32) + (boot.bytes_per_sector - 1)) / boot.bytes_per_sector *boot.bytes_per_sector
-
-/**
- * @brief Calculate the size of the system area
- */
-// #define SYSTEM_AREA_SIZE(boot) (RESERVED_SIZE(boot) + FAT_SIZE(boot) + ROOT_DIR_SIZE(boot))
+#define ROOT_DIR_SIZE(boot) (((boot)->root_entries_count * 32) + (boot)->bytes_per_sector - 1) / (boot)->bytes_per_sector
 
 /**
  * @brief Calculate the total number of clusters
@@ -42,8 +27,8 @@
 /**
  * @brief Calculate the total number of clusters in the system area
  */
-#define SYSTEM_CLUSTERS(boot) (\
-    (boot)->reserved_sectors + \
+#define SYSTEM_CLUSTERS(boot) (                               \
+    (boot)->reserved_sectors +                                \
     ((uint16_t)(boot)->fat_count * (boot)->sectors_per_fat) + \
     ((boot)->root_entries_count * 32) / (boot)->bytes_per_sector)
 
@@ -51,6 +36,26 @@
  * @brief Calculate the total number of clusters in the data area
  */
 #define DATA_CLUSTERS(boot) (TOTAL_CLUSTERS(boot) - SYSTEM_CLUSTERS(boot))
+
+/**
+ * @brief Calculate the start of the sectors of the data area
+ */
+#define DATA_AREA_START(boot) (boot)->reserved_sectors + ((boot)->fat_count * (boot)->sectors_per_fat) + ROOT_DIR_SIZE(boot)
+
+/**
+ * @brief Calculate the start of the data area in bytes
+ */
+#define DATA_AREA_START_BYTES(boot) (DATA_AREA_START(boot) * (boot)->bytes_per_sector)
+
+/**
+ * @brief Calculate the offset of the data clusters in bytes
+ */
+#define DATA_CLUSTER_OFFSET(boot, cluster) (cluster - 2) * ((boot)->sectors_per_cluster * (boot)->bytes_per_sector)
+
+/**
+ * @brief Calculate the offset of the data clusters in bytes
+ */
+#define CLUSTER_OFFSET(boot, cluster) (DATA_AREA_START_BYTER(boot) + DATA_CLUSTER_OFFSET(boot, cluster))
 
 /**
  * @brief FAT12 boot sector structure
@@ -76,14 +81,15 @@ typedef struct
 /**
  * @brief FAT entries structure
  */
-typedef struct {
+typedef struct
+{
     uint16_t *entries; // FAT entries
-    uint16_t size;    // Number of entries
+    uint16_t size;     // Number of entries
 } FatEntries;
 
 /**
  * @brief Parse the boot sector of a FAT12 file system.
- * 
+ *
  * @param file File pointer to the FAT12 image
  * @param boot_sector Pointer to the boot sector structure
  * @return 0 on success, -1 on error
@@ -92,12 +98,22 @@ int parse_boot_sector(FILE *file, BootSector *boot_sector);
 
 /**
  * @brief Parse the FAT entries of a FAT12 file system.
- * 
+ *
  * @param file File pointer to the FAT12 image
  * @param boot_sector Pointer to the boot sector structure
  * @param fat_entries Pointer to the FAT entries structure
  * @return 0 on success, -1 on error
  */
-int parse_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entries);
+int load_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entries);
+
+/**
+ * @brief Traverse the FAT chain
+ *
+ * @param fat_entries Pointer to the FatEntries structure
+ * @param start_cluster Start cluster of the chain
+ *
+ * @return 0 on success, -1 on error
+ */
+int traverse_fat_chain(const FatEntries *fat_entries, uint16_t start_cluster);
 
 #endif

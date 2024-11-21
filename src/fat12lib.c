@@ -16,7 +16,7 @@ int parse_boot_sector(FILE *file, BootSector *boot_sector)
     return 0;
 }
 
-int parse_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entries)
+int load_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entries)
 {
     uint16_t fat_sart = FAT_START(boot_sector);
     uint16_t fat_size = FAT_SIZE(boot_sector);
@@ -60,5 +60,15 @@ int parse_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entri
     }
 
     free(compact_fat);
+    return 0;
+}
+
+int traverse_fat_chain(const FatEntries *fat_entries, uint16_t start_cluster)
+{
+    if (start_cluster >= fat_entries->size || start_cluster == 0)
+    {
+        fprintf(stderr, "Error: Invalid start cluster\n");
+        return -1;
+    }
     return 0;
 }
