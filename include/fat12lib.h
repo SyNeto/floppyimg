@@ -40,22 +40,23 @@
 /**
  * @brief Calculate the start of the sectors of the data area
  */
-#define DATA_AREA_START(boot) (boot)->reserved_sectors + ((boot)->fat_count * (boot)->sectors_per_fat) + ROOT_DIR_SIZE(boot)
+#define DATA_AREA_START(boot) ((uint32_t)(boot)->reserved_sectors + ((uint32_t)(boot)->fat_count * (uint32_t)(boot)->sectors_per_fat) + (uint32_t)ROOT_DIR_SIZE(boot))
 
 /**
  * @brief Calculate the start of the data area in bytes
  */
-#define DATA_AREA_START_BYTES(boot) (DATA_AREA_START(boot) * (boot)->bytes_per_sector)
+#define DATA_AREA_START_BYTES(boot) ((uint32_t)DATA_AREA_START(boot) * (uint32_t)(boot)->bytes_per_sector)
+
 
 /**
  * @brief Calculate the offset of the data clusters in bytes
  */
-#define DATA_CLUSTER_OFFSET(boot, cluster) (cluster - 2) * ((boot)->sectors_per_cluster * (boot)->bytes_per_sector)
+#define DATA_CLUSTER_OFFSET(boot, cluster) (cluster - 2) * ((uint16_t)(boot)->sectors_per_cluster * (uint16_t)(boot)->bytes_per_sector)
 
 /**
  * @brief Calculate the offset of the data clusters in bytes
  */
-#define CLUSTER_OFFSET(boot, cluster) (DATA_AREA_START_BYTER(boot) + DATA_CLUSTER_OFFSET(boot, cluster))
+#define CLUSTER_OFFSET(boot, cluster) (DATA_AREA_START_BYTES(boot) + (uint32_t)DATA_CLUSTER_OFFSET(boot, cluster))
 
 /**
  * @brief FAT12 boot sector structure
