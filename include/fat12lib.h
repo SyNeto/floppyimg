@@ -89,6 +89,16 @@ typedef struct
 } FatEntries;
 
 /**
+ * @brief FAT chains structure
+ */
+typedef struct
+{
+    uint16_t **chains;
+    size_t *lengths;
+    size_t count;
+} FatChains;
+
+/**
  * @brief Parse the boot sector of a FAT12 file system.
  *
  * @param file File pointer to the FAT12 image
@@ -108,13 +118,11 @@ int parse_boot_sector(FILE *file, BootSector *boot_sector);
 int load_fat_entries(FILE *file, BootSector *boot_sector, FatEntries *fat_entries);
 
 /**
- * @brief Traverse the FAT chain
- *
- * @param fat_entries Pointer to the FatEntries structure
- * @param start_cluster Start cluster of the chain
- *
+ * @brief Analyze the FatEntries to find valid cluster chains.
+ * 
+ * @param fat_entries const Pointer to the FAT entries structure
  * @return 0 on success, -1 on error
  */
-int traverse_fat_chain(const FatEntries *fat_entries, uint16_t start_cluster);
+int parse_fat_table(const FatEntries *fat_entries, FatChains *fat_chains);
 
 #endif
